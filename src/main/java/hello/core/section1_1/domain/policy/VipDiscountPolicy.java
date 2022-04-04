@@ -1,9 +1,9 @@
-package hello.core.domain.policy;
+package hello.core.section1_1.domain.policy;
 
-import hello.core.domain.member.Member;
-import hello.core.domain.member.Rating;
-import hello.core.domain.order.Order;
-import hello.core.repository.MemoryOrderRepositoryVer2;
+import hello.core.section1_1.domain.member.Member;
+import hello.core.section1_1.domain.member.Rating;
+import hello.core.section1_1.domain.order.Order;
+import hello.core.section1_1.repository.MemoryOrderRepositoryVer2;
 
 import java.util.List;
 

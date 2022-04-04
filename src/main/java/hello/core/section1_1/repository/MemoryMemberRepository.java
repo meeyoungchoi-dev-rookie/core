@@ -1,7 +1,7 @@
-package hello.core.repository;
+package hello.core.section1_1.repository;
 
-import hello.core.domain.member.Member;
-import hello.core.infra.MemberRepository;
+import hello.core.section1_1.domain.member.Member;
+import hello.core.section1_1.infra.MemberRepository;
 
 import java.util.HashMap;
 import java.util.Map;

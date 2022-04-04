@@ -118,3 +118,39 @@ public Long createSequence() {
     return MemoryOrderRepositoryVer2.orderNo += 1;
 }
 ```
+
+# 회원 도메인 설계
+## 회원 도메인 협력 관계
+
+![회원도메인 협력관계](https://user-images.githubusercontent.com/42866800/161555578-3e6867f4-4900-4521-ba5b-8def12c5106a.png)
+
+## 회원 클래스 다이어그램
+
+- 회원 가입과 조회 시스템을 구성하는 클래스 사이의 관계를 표현
+- 인터페이스는 책임이다
+- 즉 객체가 해야하는 일이다
+- 객체가 외부에 제공하는 인터페이스는 객체가 수행하는 책임이다
+- 인터페이스와 구현체 관곌르 can do this 관계라고 한다
+- 즉 , MemberService 인터페이스를 구현한 구현체는 회원을 가입시키고 회원을 조회할 수 있다
+
+![회원클래스다이어그램](https://user-images.githubusercontent.com/42866800/161555582-8d476910-1979-4c38-9127-c99db4365ea9.png)
+
+## 회원 객체 다이어그램
+
+- 구체화된 구현체는 제외하고 추상화된 인터페이스를 기반으로 객체의 협력 관계를 파악할 수 있다
+
+![회원객체다이어그램](https://user-images.githubusercontent.com/42866800/161555570-99438a3a-3b00-4185-a798-98e1b6c29268.png)
+## 현재 설계의 문제점
+
+- 이 코드의 설계상 문제점은 무엇일까
+  - MemberServiceImpl 구현체가 MemberRepository와 MemoryMemberRepository에 의존하고 있다
+  - 즉 MemberServierImpl 클래스가 MemoryMemberRepository 클래스를 참조하고 있다
+  - 또한 MemoryRepository 인터페이스도 참조하고 있다
+- 다른 저장소로 변경할때 oop 원칙을 잘 준수할까
+  - DbMemberRepository로 인터페이스 구현체를 변경하는 경우
+  - MemberServiceImpl 구현체가 의존하고 있는 구현체를 변경해줘야 한다
+  - 즉 , MemberRepository의 구현체만 갈아끼운다고 해결될수 있는 문제가 아니다
+- DIP를 지키고 있는가
+  - MemberServiceImpl 구현체가 변경가능성이 높은 MemoryMemberRepository 에 의존하고 있다
+  - MemberServiceImpl 구현체는 MemberRepository 인터페이스에도 의존하고 있다
+  - 인터페이스가 바뀌면 MemberServiceImpl 구현체의 코드도 변경해줘야 한다

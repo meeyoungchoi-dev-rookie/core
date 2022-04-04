@@ -1,4 +1,4 @@
-package hello.core.domain.member;
+package hello.core.section1_1.domain.member;
 
 public class Rating {
     private String rate;

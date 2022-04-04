@@ -1,4 +1,4 @@
-package hello.core.domain.product;
+package hello.core.section1_1.domain.product;
 
 public class Item {
     private  String itemName;

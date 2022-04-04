@@ -1,6 +1,6 @@
-package hello.core.infra;
+package hello.core.section1_1.infra;
 
-import hello.core.domain.member.Member;
+import hello.core.section1_1.domain.member.Member;
 
 public interface MemberRepository {
     void register(Member member);

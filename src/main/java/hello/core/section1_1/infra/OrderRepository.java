@@ -1,7 +1,7 @@
-package hello.core.infra;
+package hello.core.section1_1.infra;
 
-import hello.core.domain.order.OrderStatus;
-import hello.core.domain.product.Item;
+import hello.core.section1_1.domain.order.OrderStatus;
+import hello.core.section1_1.domain.product.Item;
 
 
 public interface OrderRepository {

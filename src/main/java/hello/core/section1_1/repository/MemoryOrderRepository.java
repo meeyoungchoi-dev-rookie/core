@@ -1,9 +1,9 @@
-package hello.core.repository;
+package hello.core.section1_1.repository;
 
-import hello.core.domain.order.Order;
-import hello.core.domain.order.OrderStatus;
-import hello.core.domain.product.Item;
-import hello.core.infra.OrderRepository;
+import hello.core.section1_1.domain.order.Order;
+import hello.core.section1_1.domain.order.OrderStatus;
+import hello.core.section1_1.domain.product.Item;
+import hello.core.section1_1.infra.OrderRepository;
 
 import java.util.HashMap;
 import java.util.Map;

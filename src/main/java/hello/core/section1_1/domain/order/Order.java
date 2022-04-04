@@ -1,7 +1,6 @@
-package hello.core.domain.order;
+package hello.core.section1_1.domain.order;
 
-import hello.core.domain.member.Member;
-import hello.core.domain.product.Item;
+import hello.core.section1_1.domain.product.Item;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -1,4 +1,4 @@
-package hello.core.domain.order;
+package hello.core.section1_1.domain.order;
 
 public class OrderStatus {
     private boolean status;
