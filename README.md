@@ -154,3 +154,81 @@ public Long createSequence() {
   - MemberServiceImpl 구현체가 변경가능성이 높은 MemoryMemberRepository 에 의존하고 있다
   - MemberServiceImpl 구현체는 MemberRepository 인터페이스에도 의존하고 있다
   - 인터페이스가 바뀌면 MemberServiceImpl 구현체의 코드도 변경해줘야 한다
+
+--------------------------------------------------------------------------------
+# 주문과 할인 정책
+
+- 회원은 상품을 주문할 수 있다
+- 회원은 등급에 따라 할인 정책을 적용할 수 있다
+- 할인 정책인 모든 VIP는 1000원을 할인 해주는 고급 금액 할인을 적용
+- 할인 정책은 변경가능성이 높다 (아직 기본 할인 정책을 정하지 못했다는 가정 )
+
+```java
+@Override
+public void makeOrder(Order order , Discount discountForVip) {
+	Member member = order.getMember();
+	boolean status = member.checkMemberLevel();
+	if (status) {
+	    discountPolicy.discount(order, discountForVip);
+	}
+}
+```
+
+## 문제점
+- Order 객체가 Member 객체에 의존하고 있다
+- Member 객체를 변경하는 경우 Order 객체에 영향을 줄 수 있다
+
+## 수정후
+- Order 객체는 주문과 관련된 데이터만 관리한다
+- Member 객체는 회원과 관련된 데이터만 관리한다
+- OrderService에서  회원이 VIP등급인 경우 Discount 구현체의 discount 메서드를 통해 금액을 할인해준다
+- Discount 인터페이스는 고정할인 정책과 비율할인 정책으로 나눠진다
+- 두 구현체 모두 금액 할인 이라는 공통 책임을 갖는다
+- 따라서 DiscountPolicy 인터페이스로 공통 역할을 추상화 하였다
+- 추상화를 함으로써 새로운 할인정책이 추가되더라도 구현체가iscountPolicy 인터페이스 타입이라면 공통 역할을 수행할 수 있게 된다
+
+```java
+public class OrderServiceImpl implements OrderService {
+
+    private MemberRepository memberRepository = new MemoryMemberRepository();
+
+    private DiscountPolicy discountPolicy = new FixDiscountPolicy();
+
+    private static final Integer discountVipPrice = 1000;
+
+    @Override
+    public Order makeOrder(Member member, Order order) {
+        Member result = memberRepository.findBySequence(member.getMemberSequence());
+
+        Integer discountPrice = 0;
+        if (result.checkMemberLevel()) {
+            discountPrice = discountPolicy.discount(order , discountVipPrice);
+        }
+
+        return new Order(order.getProductName() , order.getProductPrice() , discountPrice);
+    }
+}
+```
+
+```java
+public interface DiscountPolicy {
+    Integer discount(Order order, Integer discountPrice);
+}
+```
+
+```java
+public class FixDiscountPolicy implements DiscountPolicy {
+
+    private MemberRepository memberRepository = new MemoryMemberRepository();
+
+    @Override
+    public Integer discount(Order order, Integer discountPrice) {
+        return order.getOrderTotalPrice() - discountPrice;
+    }
+}
+```
+
+## 수정해야 하는 부분
+
+- Discount 객체에서는 회원 등급에 따라 얼마를 할인해줄지 할인 금액만 반환해 준다
+- 실제 할인 이후 금액은 Order에서 계산한다
