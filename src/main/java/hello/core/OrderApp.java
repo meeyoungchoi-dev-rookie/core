@@ -2,27 +2,27 @@ package hello.core;
 
 import hello.core.member.Grade;
 import hello.core.member.Member;
-import hello.core.member.repository.MemberRepository;
-import hello.core.member.repository.impl.MemoryMemberRepository;
+import hello.core.member.service.MemberService;
 import hello.core.order.Order;
 import hello.core.order.service.OrderService;
-import hello.core.order.service.impl.OrderServiceImpl;
-
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 public class OrderApp {
     public static void main(String[] args) {
 
-        MemberRepository memberRepository = new MemoryMemberRepository();
-        OrderService orderService = new OrderServiceImpl();
+        ApplicationContext applicationContext = new AnnotationConfigApplicationContext(AppConfig.class);
+        MemberService memberService = applicationContext.getBean("memberService", MemberService.class);
+        OrderService orderService = applicationContext.getBean("orderService", OrderService.class);
 
         Long memberId = 1L;
         Member member = new Member(memberId, "memberA", Grade.VIP);
-        Order order = new Order(member.getSequence(), "itemA", 5000, 0);
-        memberRepository.register(member);
-      Member finded = memberRepository.findMember(memberId);
+        Order order = new Order(member.getSequence(), "itemA", 20000, 0);
+        memberService.register(member);
+        Member finded = memberService.findMember(memberId);
         Order ordered = orderService.createOrder(finded.getSequence(), order.getItemName() , order.getItemPrice());
 
-        System.out.println(ordered.calculatePrice());
+        System.out.println(ordered.getDiscountPrice());
 
     }
 }

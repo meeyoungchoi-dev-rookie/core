@@ -14,7 +14,5 @@ public class RateDiscountPolicy implements DiscountPolicy{
         } else {
             return 0;
         }
-
-
     }
 }
