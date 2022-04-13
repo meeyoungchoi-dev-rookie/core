@@ -251,3 +251,76 @@ public class FixDiscountPolicy implements DiscountPolicy {
 - 의존관계 주입에 초점을 맞춰 최근에는 DI 컨테이너 라고 한다
 - 여러 DI 컨테이너 오픈소스가 많이 있다
 - 어샘블로 또는 오브젝트 팩토리 라고 부리기도 한다
+
+## 스프링 컨테이너
+- ApplicationContext가 스프링 컨테이너이다
+- 인터페이스를 구현한 AnnotationConfigApplication 구현체를 통해 AppConfig 설정 정보를 사용하여 스프링 컨테이너에 빈을 등록하고 의존관계를 주입한다
+
+### 스프링 빈 의존관계 설정
+- 스프링 컨테이너는 AppConfig 클래스의 @Bean 어노테이션이 붙은 메서드를 참고하여 의존관계를 주입해 준다
+- 빈을 생성하는 단계와 의존관계를 주입하는 단계가 나뉘어져 있다
+
+### 모든 빈 출력하기
+- 스프링에서 제공하는 모든 빈 정보를 알고싶을때 사용
+- 스프링 컨테이너에 등록된 모든 빈 이름 정보를 가져와서 빈복문을 돌린다
+- bean 이름을 사용하여 bean을 꺼낸다
+
+
+### 애플리케이션 빈 출력하기
+- 스프링이 제공하는 빈 말고 애플리케이션을 사용하기 위해 등록한 빈 정보만 출력하고 싶을때 사용
+- BeanDifinication의 타입을 ROLE_APPLICATION으로 설정해 줘야 한다
+
+### 스프링 빈 조회 기본
+
+- 빈 이름으로 조회
+
+```java
+@Test
+@DisplayName("빈 이름으로 조회")
+void findBeanByName() {
+    MemberService memberService = ac.getBean("memberService", MemberService.class);
+    assertThat(memberService).isInstanceOf(MemberServiceImpl.class);
+
+}
+```
+
+- 빈 타입으로 조회
+
+```java
+@Test
+@DisplayName("이름 없이 타입으로 조회")
+void findBeanByType() {
+    MemberService memberService = ac.getBean(MemberService.class);
+    assertThat(memberService).isInstanceOf(MemberServiceImpl.class);
+
+}
+```
+
+- 구체 타입으로 조회
+- 스프링 컨테이너에 등록된 인스턴스 타입을 보고 빈이 결정된다
+- 하지만 구현타입으로 조회하는 것은 좋치 않다
+- DIP 원칙에 따라 역할에 의존하는 것이 좋기 떄문이다
+
+```java
+@Test
+    @DisplayName("구체 타입으로 조회")
+    void findBeanByType2() {
+        MemberService memberService = ac.getBean("memberService", MemberServiceImpl.class);
+        assertThat(memberService).isInstanceOf(MemberServiceImpl.class);
+        
+
+    }
+```
+
+- 빈 조회시 예외가 발생하는지 테스트
+- 스프링 컨테이너에 등록되지 않은 빈을 조회할때 NoSuchBeanDefinitionException 이 발생하는지 테스트
+
+```java
+@Test
+@DisplayName("빈 이름으로 조회x 예외가 던져지는지 확인하기 위한 테스트")
+void findBeanByNamex() {
+    // org.springframework.beans.factory.NoSuchBeanDefinitionException: No bean named 'xxxx' available
+    assertThrows(NoSuchBeanDefinitionException.class,
+            () -> ac.getBean("xxxx", MemberService.class));
+}
+```
