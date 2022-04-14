@@ -324,3 +324,66 @@ void findBeanByNamex() {
             () -> ac.getBean("xxxx", MemberService.class));
 }
 ```
+
+### xml로 빈 설정
+- appConfig.xml 파일을 사용하여 빈설정 테스트
+- xml 파일을 읽어오기 위해 GenericXmlApplicationContext 객체를 사용한다
+
+```java
+public class XmlAppContext {
+
+    @Test
+    void xmlAppContext() {
+       ApplicationContext ac = new GenericXmlApplicationContext("appConfig.xml");
+       MemberService memberService = ac.getBean("memberService", MemberService.class);
+        assertThat(memberService).isInstanceOf(MemberService.class);
+    }
+}
+```
+
+## BeanDefinition - 빈 설정 메타정보
+
+- 스프링은 어떤게 AppConfig 기반 클래스 설정정보와 xml 기반 설정정보를 지원할 수 있는 것 인가
+- 역활과 구조를 개념적으로 나눠놨다
+- 즉  인터페이스를 통해 추상화 시켰다
+- BeanDifinition 인터페이스를 구현한 애들이 AppConfig.class 와 appConfig.xml 이다
+- 따라서 BeanDifinition 인터페이스는 구현체가 무엇인지 신경쓰지 않아도 된다
+- 구현체가 구현한 타입이 BeanDifinition 이기 만 하면 빈을 스프링 컨테이너에 등록할 수 있다
+-
+
+![BeanDefiniton.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/6fcf1c7f-d2e2-455e-8b35-5e498873a930/BeanDefiniton.png)
+
+### BeanDefinition 정보
+- BeanClassName: 생성할 빈의 클래스 명(자바 설정 처럼 팩토리 역할의 빈을 사용하면 없음)
+- factoryBeanName: 팩토리 역할의 빈을 사용할 경우 이름, 예) appConfig
+- factoryMethodName: 빈을 생성할 팩토리 메서드 지정, 예) memberService
+- Scope: 싱글톤(기본값)
+- lazyInit: 스프링 컨테이너를 생성할 때 빈을 생성하는 것이 아니라, 실제 빈을 사용할 때 까지 최대한
+- 생성을 지연처리 하는지 여부
+- InitMethodName: 빈을 생성하고, 의존관계를 적용한 뒤에 호출되는 초기화 메서드 명
+- DestroyMethodName: 빈의 생명주기가 끝나서 제거하기 직전에 호출되는 메서드 명
+- Constructor arguments, Properties: 의존관계 주입에서 사용한다
+
+
+## 싱글톤이 없다면
+- 클라이언트가 요청을 보낼때 마다 AppConfig가 memberServie 객체를 새롭게 생성하게 된다
+- memberService에 의존하고 있는 MemoryMemberRepository 객체도 새롭게 생성된다
+- 아래의 테스트 예제에서 memberService 객체를 두번생성하는데
+- 총 4개의 객체가 만들어 지게 된다
+- 만약 5000만개 혹은 그 이상의 객체가 계속 만들어지면 메모리 낭비가 심해지게 된다
+
+```java
+public class SingletonTest {
+
+    @Test
+    @DisplayName("스프링 없는 순수한 DI 컨테이너")
+    void pureContainer() {
+        AppConfig appConfig = new AppConfig();
+        MemberService memberService1 = appConfig.memberService();
+
+        MemberService memberService2 = appConfig.memberService();
+
+        Assertions.assertThat(memberService1).isNotSameAs(memberService2);
+    }
+}
+```
