@@ -387,3 +387,52 @@ public class SingletonTest {
     }
 }
 ```
+
+# 싱글톤 패턴을 적용하는 방법
+
+- 무조건 한개만 생성되어야 하는 객체 인스턴스에 static final을 붙인다
+- 외부에서 생성자를 통해 객체가 생성되는 것을 막기 위해 생성자의 접근제한자를 private으로 설정한다
+- 외부에서 static 영역에 만들어진 객체 인스턴스의 주소를 공유하기 위해 static 메서드를 만들고 객체 인스턴스의 주소를 반환해 준다
+
+## 싱글톤 컨테이너
+- 스프링 컨테이너가 싱글톤 방식으로 만들어져 있다
+- 따라서 직접 싱글톤 객체를 생성하지 않아도 된다
+
+
+# 싱글톤 방식의 문제점
+## 무엇
+
+- 객체 인스턴스를 공유하기 때문에 필드를 공유 필드로 선언하게 되면 클라이언트가 기대한 값과 다른 값이 나오게되는 문제가 생길 수 있다
+
+### 문제점
+
+- StatefulService 라는 클래스 타입을 선언한다
+- 해당 객체를 싱글톤으로 만드는데 price 필드는 공유한다
+- 주문하는 메서드를 선언하고 name과 price를 파라미터로 받는다
+
+```java
+public class StatefulService {
+
+    private int price;
+
+    public void order(String name, int price) {
+        System.out.println("name = " + name + " price = " + price);
+        this.price = price;
+    }
+
+    public int getPrice() {
+        return price;
+    }
+}
+```
+
+- 싱글톤으로 StatefultService 객체 인스턴스를 생성한다
+- 가정
+- 사용자A가 10000원을 주문했다
+- 동시에 사용자B가 20000원을 주문했다
+- 사용자A가 결제를 하기 위해 자신의 금액을 확인하는데 20000원이 출력된다
+- 왜?
+- StatefulService 객체가 싱글톤이라서 공유되고 price필드가 공유변수로 선언되 있기 때문이다
+- 즉 , 사용자A가 주문했을때는 price 필드의 값이 10000원이였다
+- 하지만 사용자B가 주문하면 공유되고 있는 객체의 price 필드의 값이 20000으로 바뀐다
+- 따라서 A가 자신의 금액을 조회했을때 20000원이 출력되게 된다
