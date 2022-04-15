@@ -436,3 +436,66 @@ public class StatefulService {
 - 즉 , 사용자A가 주문했을때는 price 필드의 값이 10000원이였다
 - 하지만 사용자B가 주문하면 공유되고 있는 객체의 price 필드의 값이 20000으로 바뀐다
 - 따라서 A가 자신의 금액을 조회했을때 20000원이 출력되게 된다
+
+## 스프링이 빈을 등록할때 싱글톤으로 등록되는 원리
+- 스프링 컨테이너가 빈을 등록하기 전에 스프링 컨테이너에 빈 등록 여부를 확인한다
+- 있으면 해당 빈을 스프링 컨테이너에서 찾아 반환한다
+- 없으면 스프링 컨테이너에 해당 빈을 등록하고 반환한다
+
+```java
+@Bean
+public MemberService memberService() {
+    
+	if (memoryMemberRepository가 이미 스프링 컨테이너에 등록되어 있다면?) {
+		return 스프링 컨테이너에서 찾아서 반환;
+	} else {
+			// 스프링 컨테이너에 등록된 빈이 없다면
+      // 기존 로직을 호출해서 MemoryMemberReposittory를 생성하고 스프링 컨테이너에 등록
+			return 반환
+	}
+
+}
+```
+
+## 컴포넌트 스캔과 의존관계 자동 주입
+### 무엇
+
+- 기존에 수동으로 빈을 등록해주는 작업을 자동으로 등록되게 바꾼다
+- 왜?
+- 수동으로 빈을 등록하려면 AppConfig 설정파일도 만들어야 하고
+- 빈으로 등록되어야 하는 클래스에 @Bean 어노테이션을 붙여줘야 하기 때문이다
+
+### 어떻게
+- @ComponentScan 어노테이션을 AutoAppConfig 설정파일에 붙인다
+- 그런데 AutoAppConfig에는 @Bean 어노테이션을 사용하여 등록한 클래스가 없다
+- 왜?
+- @ComponentScan 어노테이션을 붙이면 자동으로 @Component 어노테이션이 붙은 클래스를 찾아 스프링 컨테이너에 빈으로 등록해 준다
+- @Configuration 어노테이션을 설정파일에 붙였을때 @Bean 어노테이션이 붙은 클래스가 자동으로 빈으로 등록된 이유도 @Configuration 어노테이션이 @Component 어노테이션이 붙었기 때문이다
+
+## @Autowired
+
+- 이전에는 @Bean을 통해 스프링 컨테이너에 빈이 등록되면
+- 생성자를 통해 직접 의존관계를 주입받았다
+- @Autowired 어노테이션을 사용하면 스프링 컨테이너가 자동으로 의존관계를 주입해 준다
+
+## 자동으로 빈이 잘 등록되었는지 테스트
+
+- AutoAppConfig 클래스가 설정정보 클래스이다
+- 따라서 AnnotationConfigApplicationContext 구현객체를 사용하여 해당 클래스 파일을 읽도록 설정해 준다
+- 그런데 이전과 다르게 AutoAppConfig 클래스에 @Bean 어노테이션이 없다
+- 자동으로 스프링 컨테이너에 빈으로 등록될 수 있도록 클래스에 @Component 어노테이션을 붙였기 때문이다
+- 스프링 컨테이너에 자동으로 등록된 MemberService 빈을 가져온다
+- 스프링 컨테이너에서 가져온 빈 의 타입과 클래스의 타입이 같은지 검사한다
+
+```java
+public class AutoAppConfigTest {
+
+    @Test
+    void basicScan() {
+        AnnotationConfigApplicationContext ac = new AnnotationConfigApplicationContext(AutoAppConfig.class);
+
+        MemberService memberService = ac.getBean(MemberService.class);
+        assertThat(memberService).isInstanceOf(MemberService.class);
+    }
+}
+```

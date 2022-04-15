@@ -2,6 +2,7 @@ package hello.core;
 
 import hello.core.discount.DiscountPolicy;
 import hello.core.discount.RateDiscountPolicy;
+import hello.core.member.repository.MemberRepository;
 import hello.core.member.repository.impl.MemoryMemberRepository;
 import hello.core.member.service.MemberService;
 import hello.core.member.service.impl.MemberServiceImpl;
@@ -16,21 +17,26 @@ public class AppConfig {
     // 스프링 컨테이너에 등록된다
     @Bean
     public MemberService memberService() {
+        System.out.println("call AppConfig.memberService");
         return new MemberServiceImpl(memberRepository());
     }
 
     @Bean
     public MemoryMemberRepository memberRepository() {
+        System.out.println("call AppConfig.memberRepostiory");
         return new MemoryMemberRepository();
     }
 
     @Bean
     public OrderService orderService() {
+        System.out.println("call AppConfig.orderService");
         return new OrderServiceImpl(memberRepository(), discountPolicy());
     }
 
     @Bean
     public DiscountPolicy discountPolicy() {
+
         return new RateDiscountPolicy();
     }
+
 }
