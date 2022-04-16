@@ -2,6 +2,7 @@ package hello.core.order;
 
 
 import hello.core.AppConfig;
+import hello.core.discount.FixDiscountPolicy;
 import hello.core.member.Grade;
 import hello.core.member.Member;
 import hello.core.member.repository.MemberRepository;
@@ -36,5 +37,24 @@ public class OrderServiceTest {
         Order order = orderService.createOrder(memberId , "itemA", 10000);
         Assertions.assertThat(order.getDiscountPrice()).isEqualTo(1000);
     }
+
+    @Test
+    void fieldInjectionTest() {
+
+
+        // nullPointerException이 터진다
+        // 왜?
+        //createOrder 메서드는 MemberRepository에 의존하고 있어 MemoryMemberRepository 구현체가필요하다
+        // 필드 의존주입의 경우
+        // 의존관계를 바꾸는 것이 어렵다
+        //결국 set 메서드를 사용할 수 밖에 없다
+//        orderService.setMemberRepository(new MemoryMemberRepository());
+//        orderService.setDiscountPolicy(new FixDiscountPolicy());
+//
+//        orderService
+//                .createOrder(1L, "itemA", 10000);
+
+    }
+
 
 }

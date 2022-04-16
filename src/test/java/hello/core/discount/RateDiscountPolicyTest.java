@@ -24,6 +24,6 @@ class RateDiscountPolicyTest {
     void vip_x() {
         Member member = new Member(2L, "memberVIP", Grade.BEGINNER);
         int discount = rateDiscountPolicy.discount(member, 10000);
-        assertThat(discount).isEqualTo(1000);
+        assertThat(discount).isEqualTo(0);
     }
 }

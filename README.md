@@ -499,3 +499,142 @@ public class AutoAppConfigTest {
     }
 }
 ```
+
+
+### 생성자 주입
+
+- 생성자를 통해 의존관계를 주입받는다
+- 추상 타입 필드에 final이 붙은 경우 생성자를 통해 주입할 때 해당 타입의 의존객체가 null이면 안된다
+- 한번 의존관계가 주입되면 수정할 수 없다
+- 따라서 의존관계가 불변이거나 의존관계가 필수 일때 사용한다
+- 생성자가 한개만 있는 경우 @Autowired를 생략해도 된다
+- 생성자 주입은 클래스의 빈을 등록하면서 의존관계 주입도 같이 일어난다
+
+```java
+@Component
+public class OrderServiceImpl implements OrderService {
+
+    
+     private final MemberRepository memberRepository;
+     private final DiscountPolicy discountPolicy;
+    
+		@Autowired
+		public OrderServiceImpl(MemberRepository memberRepository, DiscountPolicy discountPolicy) {
+		  System.out.println("1. OrderServiceImpl.OrderServiceImpl");
+		  this.memberRepository = memberRepository;
+		  this.discountPolicy = discountPolicy;
+		}
+
+    ...
+
+}
+```
+
+## 다양한 의존관계 주입 방법
+### 수정자 주입
+
+- set 메서드를 통해 의존관계를 주입한다
+- 주입할 의존관계 대상이 없는경우 에러가 발생한다
+- 따라서 의존관계를 주입하지 않아도 되는 경우 required = false 설정을 해줘야 한다
+- 선택적 의존관계 또는 변경 가능성이 있는 의존관계를 주입할때 사용한다
+
+```java
+@Component
+public class OrderServiceImpl implements OrderService {
+
+    private final   MemberRepository memberRepository;
+    private final   DiscountPolicy discountPolicy;
+
+    @Autowired(required = false)
+    public void setDiscountPolicy(DiscountPolicy discountPolicy) {
+
+        this.discountPolicy = discountPolicy;
+    }
+
+    @Autowired
+    public void setMemberRepository(MemberRepository memberRepository) {
+        this.memberRepository = memberRepository;
+    }
+
+    ...
+
+}
+```
+
+- 생성자 주입과 수정자 주입이 같이 있는 경우 생성자 주입이 먼저 된다
+
+### 필드 주입
+
+- 추상타입 필드에 의존관계를 직접 주입한다
+- 테스트시 의존관계를 설정하기 힘들다는 단점이 있다
+- 왜?
+- 테스트 코드는 자바코드이므로 따로 set 메서드 또는 생성자를 만들어 의존관계를 주입해 줘야 한다
+- 권장되지 않는 방법이다
+
+### 일반 메서드 주입
+
+- 일반 메서드에 @Autowired 어노테이션을 붙이고 파라미터로 주입할 의존객체를 넣어준다
+- 파라미터를 여러개 넣을 수 있다는 장점이 있다
+
+# 옵션 처리
+## 무엇
+
+- 의존관계 주입한 빈이 없어도 정상적으로 동작시키기 위해 사용
+
+## 어떻게
+
+- 테스트 진행
+- TestBean이라는 클래스를 생성
+- @Autowired 어노테이션의 required 속성을 false로 지정
+- 의존관계가 없는 경우 메서드가 실행되지 않는다
+- Member 객체에 @Component 어노테이션이 붙어있지 않다
+- 따라서 TestBean 클래스와 의존관계가 없기 때문에 setNoBean1 메서드 자체가 아얘 실행되지 않는다
+
+```java
+@Autowired(required = false)
+public void setNoBean1(Member noBean1) {
+    System.out.println("noBean1 = " + noBean1);
+}
+```
+
+- 의존관계 주입 해주려는 Member 빈에 @Nullable 어노테이션이 붙어 있다
+- 즉 , 빈이 null 이여도 에러를 뱉지 않는다
+- 그냥 null이 출력된다
+
+```java
+@Autowired
+public void setNoBean2(@Nullable Member noBean2) {
+    System.out.println("noBean2 = " + noBean2);
+}
+```
+
+- 자바 1.8 Optional 객체를 사용하여 의존관계 주입하려는 빈을 null 체크 한다
+- Member 빈이 null인 경우 Optional.empty를 반환해준다
+
+```java
+@Autowired
+public void setNoBean3(Optional<Member> noBean3) {
+    System.out.println("noBean3 = " + noBean3);
+}
+```
+
+
+## 생성자 주입을 선택해야 하는 이유
+
+- 필드가 누락되는 것을 방지할 수 있다
+- 테스트시 의존관계 주입이 편하다
+
+```java
+public class OrderServiceImplTest {
+
+    @Test
+    void creatOrder() {
+        MemoryMemberRepository memberRepository = new MemoryMemberRepository();
+        memberRepository.register(new Member(1L, "name", Grade.VIP));
+
+        OrderServiceImpl orderService = new OrderServiceImpl(new MemoryMemberRepository(), new FixDiscountPolicy());
+        Order order = orderService.createOrder(1L, "itemA", 10000);
+        Assertions.assertThat(order.getDiscountPrice()).isEqualTo(1000);
+    }
+}
+```
