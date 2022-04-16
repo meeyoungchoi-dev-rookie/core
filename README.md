@@ -638,3 +638,106 @@ public class OrderServiceImplTest {
     }
 }
 ```
+
+
+# 동일한 타입의 빈이 두개 이상 스프링 컨테이너에 등록되 있을때 의존관계 주입시 충돌을 해결하는 방법
+## 무엇
+
+- 이전까지 DiscountPolicy 구현객체를 하나만 빈으로 등록했었다
+- 이제 FixDiscountPolicy 구현객체까지 빈으로 등록하고 테스트
+
+```java
+@Component
+public class FixDiscountPolicy implements DiscountPolicy{
+
+	...
+}
+```
+
+## 발생하는 에러
+
+- NoUniqueBeanDefinitionException
+- 에러가 발생하는 이유
+- 빈을 등록할 때 동일한 타입의 빈을 2개 이상 등록하려고 했기 때문에 발생하는 문제이다
+- RateDiscountPolicy 구현객체에 @Component 어노테이션을 붙여 빈으로 등록했다
+- 그런데 동일한 DiscountPolicy 타입의 FixDiscountPolicy 구현객체에 @Component 어노테이션을 붙여 빈으로 등록하려고 하니
+- 스프링 입장에서는 어떤 구현객체를 빈으로 등록해야 하는지 모르게 된다
+
+## 해결방법
+
+### @Autowired 필드명
+
+- 동일한 타입의 빈이 두개가 등록된 경우 의존관계주입을 위해
+- 타입뒤에 의존관계주입할 구현객체 타입을 소문자로 적어준다
+
+```java
+@Autowired
+private DiscountPolicy rateDiscountPolicy;
+```
+
+- 생성자 의존관계 주입을 사용하는 경우
+
+```java
+@Autowired
+    public OrderServiceImpl(MemberRepository memberRepository, DiscountPolicy rateDiscountPolicy) {
+        this.memberRepository = memberRepository;
+        this.discountPolicy = rateDiscountPolicy;
+    }
+```
+
+### @Qualifier
+
+- 동일한 타입을 구현한 구현객체에 @Qualifier(”필드명우선순위”)를 지정해 준다
+
+```java
+@Component
+@Qualifier("mainDiscountPolicy")
+public class RateDiscountPolicy implements DiscountPolicy{
+		...
+
+}
+```
+
+```java
+@Component
+@Qualifier("secondDiscountPolicy")
+public class FixDiscountPolicy implements DiscountPolicy{
+		...
+
+}
+```
+
+```java
+@Component
+public class OrderServiceImpl implements OrderService {
+
+    private final MemberRepository memberRepository;
+    private final DiscountPolicy discountPolicy;
+
+    @Autowired
+    public OrderServiceImpl(MemberRepository memberRepository, @Qualifier("mainDiscountPolicy") DiscountPolicy discountPolicy) {
+        this.memberRepository = memberRepository;
+        this.discountPolicy = discountPolicy;
+    }
+
+		...
+}
+```
+
+- @Component 로 빈을 등록할때 말고 수동으로 @Bean 어노테이션을 사용하여 빈을 등록할때도 @Qualifier 어노테이션을 사용할 수 있다
+
+### @Primary
+
+- 빈등록시 우선순위를 지정하는 어노테이션
+- RateDiscountPolicy 구현객체 빈이 우선적으로 의존관계 주입이 될 수 있게 설정하겠다
+
+```java
+@Component
+@Primary
+public class RateDiscountPolicy implements DiscountPolicy{
+
+    ...
+}
+```
+
+- 메인 데이타베이스 커넥션을 가져오는 경우 @Primary 어노테이션을 붙여 무조건 메인 데이터베이스 커넥션이 주입될 수 있게 처리
