@@ -1,3 +1,21 @@
+
+## spring 동작 원리
++ spring을 쓰는 목적
++ SOLID 객체지향 설계 5원칙
++ IoC DI 컨테이너
+
+## spring 활용
++ 스프링 컨테이너와 빈 조회
++ 빈 설정하는 방법 
++ 싱글톤 패턴과 싱글톤 패턴의 문제점
++ 컴포넌트 스캔과 의존관계 자동 주입
++ 다양한 의존관계 주입 방법
++ 빈 생명주기 
++ 빈 스코프
++ 웹 스코프
+
+
+
 ## 프로젝스 생성
 - start.spring.io 에서 spring web을 주입하지 않으면 프로젝트 생성후 run 했을때 톰켓이 올라가지 않늗다
 ## 비즈니스 요구사항
@@ -795,3 +813,216 @@ public class RateDiscountPolicy implements DiscountPolicy{
 - 애플리케이션 컨텍스트 전체를 주입받게 되면 스프링 컨테이너에 종속적인 코드가 된다
 - 또한 단위 테스트를 작성하기 어려워 진다
 - 지정한 프로토타입 빈을 컨테이너에서 대신 찾아주는 DL 기능만 있으면 된다
+
+# 웹 스코프
+## 무엇
+
+- 요청이 들어가고 응답을 해주는 한 사이클이 진행되는 동안 유지되는 스코프
+- HTTP 요청 하나가 들어오고 나갈때까지 유지되는 스코프
+
+## 특징
+
+- 웹 환경에서만 동작한다
+- 스프링이 웹 스코프의 종료시점까지 관리한다
+- 따라서 종료 메서드가 호출된다
+
+## 종류
+
+- request - 각 HTTP 요청마다 별도의 빈 인스턴스가 생성된다
+- session - HTTP Session과 동일한 생명주기를 갖는 스코프
+- application - 서블릿 컨텍스트와 동일한 생명주기를 갖는 스코프
+- websocket - 웹 소켓과 동일한 생명주기를 가지는 스코프
+
+## 스코프와 Provider
+
+### 무엇
+
+- Provider를 사용하여 빈이 생성되고 의존관계가 주입되는 시점을 Request 요청이 들어오고 난후에 실행되도록 한다
+
+### 어떻게
+
+- MyLogger 빈을 ObjectProvider를 통해 꺼내도록 설정
+- 그러면 요청이 들어오면 스프링 컨테이너가 빈을 생성하고 의존관계 주입이 끝나면 Provider가 빈을 꺼낸다
+
+```java
+@Controller
+@RequiredArgsConstructor
+public class LogDemoController {
+
+    private final LodDemoService lodDemoService;
+    private final ObjectProvider<MyLogger> myLoggerProvider;
+
+    @RequestMapping("log-demo")
+    @ResponseBody
+    public String logDemo(HttpServletRequest request) throws InterruptedException {
+        MyLogger myLogger = myLoggerProvider.getObject();
+        String requestURL = request.getRequestURI().toString();
+        myLogger.setRequestUrl(requestURL);
+
+        myLogger.log("controller test");
+        Thread.sleep(100);
+        lodDemoService.logic("testId");
+        return "OK";
+    }
+
+}
+```
+
+- request 스코프는 요청이 들어오고 응답이 나갈때 까지가 생명주기이다
+- 따라서 LogDemoService가 의존하고 있는 MyLogger 빈도 Provider를 통해 꺼낼수 있게 설정해 줘야 한다
+
+```java
+@Service
+@RequiredArgsConstructor
+public class LodDemoService {
+
+    private final ObjectProvider<MyLogger> myLoggerProvider;
+
+    public void logic(String id) {
+        MyLogger mylog = myLoggerProvider.getObject();
+        mylog.log("service id = " + id);
+    }
+}
+```
+
+### 테스트 결과
+
+- Provider를 사용하여 스프링 컨테이너가 빈을 생성 및 의존관계 주입 시점을 request 요청이 들어올때 수행하도록 지연시킨다
+- reqeust 스코프에 의해 한꺼번에 여러 요청이 들어와도 각 빈의 주소값은 다르다
+- 클라이언트별로 다른 빈 인스턴스가 할당된다
+- request 스코프는 요청 부터 응답까지 유효하기 때문에 응답을 내보내기 전까지는 몇개의 요청이 들어와도 각 요청별로 다른 빈 인스턴스가 생성된다
+
+```java
+[5137c4a9-e7d3-414e-9651-c891e85ec9d3] request scope bean create: hello.core.common.MyLogger@2731157e
+[5137c4a9-e7d3-414e-9651-c891e85ec9d3][/log-demo][controller test]
+[d365390f-f2fd-442a-ab90-41274799be78] request scope bean create: hello.core.common.MyLogger@630e73c1
+[d365390f-f2fd-442a-ab90-41274799be78][/log-demo][controller test]
+[5137c4a9-e7d3-414e-9651-c891e85ec9d3][/log-demo][service id = testId]
+[5137c4a9-e7d3-414e-9651-c891e85ec9d3] request scope bean close: hello.core.common.MyLogger@2731157e
+[d365390f-f2fd-442a-ab90-41274799be78][/log-demo][service id = testId]
+[d365390f-f2fd-442a-ab90-41274799be78] request scope bean close: hello.core.common.MyLogger@630e73c1
+```
+
+## 스코프와 프록시
+
+### 무엇
+
+- Provider를 사용하여 특정시점에 빈을 생성하고 의존관계 주입해서 가져오는 코드를 프록시를 사용하여 줄인다
+
+### 어떻게
+
+- @Scope 어노테이션에 proxyMode 속성을 사용한다
+- 속성값으로 `ScopedProxyMode.*TARGET_CLASS` 를 넣어준다*
+- 그러면 빈을 의존관계 주입받을때 Provider를 통해 주입받지 않아도 된다
+- 왜?
+- spring이 실행되면 컨테이너가 CGLIB 라이브러리를 사용하여 가짜 빈을 생성해서 가지고 있는다
+- 요청이 들어와서 해당 빈을 사용해야 하는 시점에 진짜 빈으로 교체된다
+- 클라이언트 입장에서는 빈이 가짜인지 진짜인지 신경쓰지 않아도 된다
+- 왜?
+- 다형성이 적용되어 있기 때문이다
+
+```java
+@Component
+@Scope(value = "request", proxyMode = ScopedProxyMode.TARGET_CLASS)
+public class MyLogger {
+
+    private String uuid;
+    private String requestUrl;
+
+    public void setRequestUrl(String requestUrl) {
+        this.requestUrl = requestUrl;
+    }
+
+    public void log(String message) {
+        System.out.println("[" + uuid + "]" + "[" + requestUrl + "]" + "[" + message + "]");
+    }
+
+    @PostConstruct
+    public void  init() {
+        uuid = UUID.randomUUID().toString();
+        System.out.println("[" + uuid + "] request scope bean create: " + this);
+    }
+
+    @PreDestroy
+    public void close() {
+        System.out.println("[" + uuid + "] request scope bean close: " + this);
+    }
+}
+```
+
+```java
+@Controller
+@RequiredArgsConstructor
+public class LogDemoController {
+
+    private final LodDemoService lodDemoService;
+    private final MyLogger myLogger;
+    // class hello.core.common.MyLogger$$EnhancerBySpringCGLIB$$d33dfd68
+    // CGLIB라는 라이브러리를 사용하여 가짜 프록시 객체를 만들어서 일단 주입해 둔다
+
+    @RequestMapping("log-demo")
+    @ResponseBody
+    public String logDemo(HttpServletRequest request) throws InterruptedException {
+        String requestURL = request.getRequestURI().toString();
+
+        System.out.println("myLogger = " + myLogger.getClass());
+
+        // 실제 MyLogger 빈을 사용하는 시점에 진짜 빈이 동작한다
+        myLogger.setRequestUrl(requestURL);
+
+        myLogger.log("controller test");
+        Thread.sleep(100);
+        lodDemoService.logic("testId");
+        return "OK";
+    }
+
+}
+```
+
+```java
+@Service
+@RequiredArgsConstructor
+public class LodDemoService {
+
+    private final MyLogger myLogger;
+
+    public void logic(String id) {
+        myLogger.log("service id = " + id);
+    }
+}
+```
+
+### 테스트 결과
+
+- request 가 들어오면 프록시에 의해 생성된 가짜 빈이 주입되고
+- 실제 해당 빈이 사용되는 시점에 스프링 컨테이너에서 진짜 빈을 가져온다
+- 가짜 프록시 객체에는 내부에 진짜 빈을  요청하는 로직이 들어가 있다
+
+```java
+myLogger = class hello.core.common.MyLogger$$EnhancerBySpringCGLIB$$d33dfd68
+[6ffd07d6-37cf-4562-b402-aab31fad1764] request scope bean create: hello.core.common.MyLogger@3fedaeb5
+[6ffd07d6-37cf-4562-b402-aab31fad1764][/log-demo][controller test]
+[6ffd07d6-37cf-4562-b402-aab31fad1764][/log-demo][service id = testId]
+[6ffd07d6-37cf-4562-b402-aab31fad1764] request scope bean close: hello.core.common.MyLogger@3fedaeb5
+myLogger = class hello.core.common.MyLogger$$EnhancerBySpringCGLIB$$d33dfd68
+[5737b54d-aacb-4be5-a30f-2b2e6e0831c9] request scope bean create: hello.core.common.MyLogger@302f5c6b
+[5737b54d-aacb-4be5-a30f-2b2e6e0831c9][/log-demo][controller test]
+[5737b54d-aacb-4be5-a30f-2b2e6e0831c9][/log-demo][service id = testId]
+[5737b54d-aacb-4be5-a30f-2b2e6e0831c9] request scope bean close: hello.core.common.MyLogger@302f5c6b
+myLogger = class hello.core.common.MyLogger$$EnhancerBySpringCGLIB$$d33dfd68
+[107654ce-a355-42d9-b19f-7636910d1996] request scope bean create: hello.core.common.MyLogger@25f3030d
+[107654ce-a355-42d9-b19f-7636910d1996][/log-demo][controller test]
+[107654ce-a355-42d9-b19f-7636910d1996][/log-demo][service id = testId]
+[107654ce-a355-42d9-b19f-7636910d1996] request scope bean close: hello.core.common.MyLogger@25f3030d
+myLogger = class hello.core.common.MyLogger$$EnhancerBySpringCGLIB$$d33dfd68
+[50b5db63-3792-4b2a-8456-24ed6b3c1631] request scope bean create: hello.core.common.MyLogger@78618568
+[50b5db63-3792-4b2a-8456-24ed6b3c1631][/log-demo][controller test]
+[50b5db63-3792-4b2a-8456-24ed6b3c1631][/log-demo][service id = testId]
+[50b5db63-3792-4b2a-8456-24ed6b3c1631] request scope bean close: hello.core.common.MyLogger@78618568
+```
+
+### 핵심
+
+- Provider를 사용하던 프록시를 사용하던 핵심은 빈을 필요한 시점에 생성할 수 있게 지연시키는 것이다
+- request 요청이 들어오기 전까지는 가짜 프록시 빈으로 버티다가 나중에 로직 실행시점에 해당 빈을 진짜로 갈아끼운다
+- 다형성과 DI 컨테이너 덕분에 프록시 빈을 진짜 빈으로 갈아끼울수 있다
