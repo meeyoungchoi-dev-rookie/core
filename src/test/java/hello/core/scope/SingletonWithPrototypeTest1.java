@@ -1,6 +1,8 @@
 package hello.core.scope;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.ObjectFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -8,6 +10,7 @@ import org.springframework.context.annotation.Scope;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import javax.inject.Provider;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -48,16 +51,12 @@ public class SingletonWithPrototypeTest1 {
 
     @Scope("singleton")
     static class ClientBean {
-       private final PrototypeBean prototypeBean; // 생성시점에 주입
-
-
 
         @Autowired
-        public ClientBean(PrototypeBean prototypeBean) {
-            this.prototypeBean = prototypeBean;
-        }
+        private ObjectProvider<PrototypeBean> prototypeBeanProvider;
 
         public int logic() {
+            PrototypeBean prototypeBean = prototypeBeanProvider.getObject();
             prototypeBean.addCount();
             return prototypeBean.getCount();
         }
